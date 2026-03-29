@@ -1,22 +1,39 @@
-FROM richarvey/php-apache-heroku:latest
+# On utilise l'image officielle PHP avec Apache
+FROM php:8.2-apache
+
+# Installation des dépendances système nécessaires
+RUN apt-get update && apt-get install -y \
+    libpng-dev \
+    libpq-dev \
+    libzip-dev \
+    unzip \
+    zip \
+    nodejs \
+    npm \
+    && docker-php-ext-install pdo_pgsql pgsql zip gd
+
+# Installer Composer proprement
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Définir le répertoire de travail
-WORKDIR /var/www/app
+WORKDIR /var/www/html
 
-# Copier tout le projet Laravel
+# Copier les fichiers du projet
 COPY . .
 
-# Installer les dépendances PHP
+# Donner les permissions à Laravel
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+
+# Installer les dépendances PHP et JS
 RUN composer install --no-dev --optimize-autoloader
+RUN npm install && npm run build
 
-# Installer les dépendances JS et compiler les assets (Vite/Tailwind)
-RUN apk add --no-cache nodejs npm && \
-    npm install && \
-    npm run build
+# Configurer Apache pour pointer vers le dossier public/ de Laravel
+RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
+RUN a2enmod rewrite
 
-# Configuration Apache pour Laravel
-ENV WEBROOT /var/www/app/public
-ENV APP_ENV production
+# Exposer le port 80
+EXPOSE 80
 
-# Droits d'écriture pour Laravel
-RUN chown -R www-data:www-data storage bootstrap/cache
+# Lancer la migration et démarrer Apache
+CMD php artisan migrate --force && apache2-foreground
