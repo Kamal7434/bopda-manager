@@ -1,11 +1,22 @@
 FROM richarvey/php-apache-heroku:latest
 
-# Copie ton code dans le serveur
-COPY . /var/www/app
+# Définir le répertoire de travail
+WORKDIR /var/www/app
 
-# Configuration de la racine de Laravel
+# Copier tout le projet Laravel
+COPY . .
+
+# Installer les dépendances PHP
+RUN composer install --no-dev --optimize-autoloader
+
+# Installer les dépendances JS et compiler les assets (Vite/Tailwind)
+RUN apk add --no-cache nodejs npm && \
+    npm install && \
+    npm run build
+
+# Configuration Apache pour Laravel
 ENV WEBROOT /var/www/app/public
 ENV APP_ENV production
 
-# Installation des dépendances
-RUN composer install --no-dev
+# Droits d'écriture pour Laravel
+RUN chown -R www-data:www-data storage bootstrap/cache
