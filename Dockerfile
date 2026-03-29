@@ -1,7 +1,7 @@
 # On utilise l'image officielle PHP avec Apache
-FROM php:8.2-apache
+FROM php:8.3-apache
 
-# Installation des dépendances système nécessaires
+# Le reste du code reste exactement le même que le précédent
 RUN apt-get update && apt-get install -y \
     libpng-dev \
     libpq-dev \
