@@ -33,4 +33,5 @@ RUN a2enmod rewrite
 EXPOSE 80
 
 # Démarrer Apache
-CMD ["apache2-foreground"]
+# On lance la migration PUIS on démarre Apache
+CMD php artisan migrate --force && apache2-foreground
